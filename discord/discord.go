@@ -2,7 +2,6 @@ package discord
 
 import (
 	"fmt"
-	"log"
 	"nations/config"
 	"nations/redis"
 	"os"
@@ -62,7 +61,7 @@ func NewDiscordClient(client redis.RedisClient) DiscordBot {
 		cmd, err := s.ApplicationCommandCreate(s.State.User.ID, "", v)
 		if err != nil {
 
-			log.Panicf("Cannot create '%v' command: %v", v.Name, err)
+			panic("Cannot create comamnd")
 		}
 		registeredCommands[i] = cmd
 	}
