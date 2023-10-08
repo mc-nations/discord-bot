@@ -2,64 +2,82 @@ package redis
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
+	"time"
+	"nations/utils"
+	 "encoding/json"
+	 "os"
 
 	"github.com/redis/go-redis/v9"
 )
 
 var ctx = context.Background()
-
-func NewRedisClient(config redis.Options) RedisClient {
-	return RedisClient{redis.NewClient(&config)}
-}
-
-type Subscriber interface {
-	Subscribe(channel string) RedisChannel
-}
 type RedisClient struct {
 	client *redis.Client
+	channels map[string]RedisChannel
+}
+var redisClient *RedisClient = nil
+func NewRedisClient() (*RedisClient, error) {
+	
+	if(redisClient != nil){
+		return redisClient, nil
+	}
+	var client *redis.Client = nil
+	err := utils.Retry(func() error {
+		client = redis.NewClient(&redis.Options{
+			Addr:     os.Getenv("REDIS_URL"),
+			Username:    os.Getenv("REDIS_USER"), 
+			Password: os.Getenv("REDIS_PASSWORD"), 
+		})
+		return nil
+	}, 12, 10 * time.Second)
+	if err != nil { 
+		return nil, err
+	} 
+	redisClient = &RedisClient{client, make(map[string]RedisChannel)}
+	return redisClient, nil
+}
+
+func (r RedisClient) GetChannels() map[string]RedisChannel {
+	return r.channels
 }
 
 func (r RedisClient) Subscribe(channel string) RedisChannel {
-	fmt.Println("Subscribing to channel", channel)
+	_, channel_exists := r.channels[channel]
+	if(channel_exists){
+		return r.channels[channel]
+	}
 	pubsub := r.client.Subscribe(ctx, channel)
-	return RedisChannel{pubsub}
+	r.channels[channel] = RedisChannel{pubsub, make(map[string][]func(Json))}
+	return r.channels[channel]
 }
 
-type Listener interface {
-	On(name string, callback func(data interface{}))
-}
 type RedisChannel struct {
 	pubsub *redis.PubSub
-}
-
-type Content struct {
-	Name string      `json:"name"`
-	Data interface{} `json:"data"`
+	event_listeners map[string][]func(Json)
 }
 
 type Message struct {
 	Type    string  `json:"type"`
 	Ip      string  `json:"ip"`
-	Content Content `json:"content"`
+	Content Json `json:"content"`
 }
 
-func (c RedisChannel) On(name string, callback func(data interface{})) {
-	go func() {
-		for {
-			raw, err := c.pubsub.ReceiveMessage(ctx)
-			if err != nil {
-				panic(err)
-			}
-			var msg Message
-			err = json.Unmarshal([]byte(raw.Payload), &msg)
-			if err != nil {
-				panic(err)
-			}
-			if msg.Content.Name == name {
-				callback(msg.Content.Data)
-			}
+type Json = map[string]interface{}
+
+func (c RedisChannel) RegisterListener(name string, callback func(Json)) {
+	c.event_listeners[name] = append(c.event_listeners[name], callback)
+}
+
+func (c RedisChannel) StartListing() {
+	for {
+		msg, err := c.pubsub.ReceiveMessage(ctx)
+		if err != nil {
+			panic(err)
 		}
-	}()
+		var message Message
+		json.Unmarshal([]byte(msg.Payload), &message)
+		for _, callback := range c.event_listeners[message.Content["name"].(string)] {
+			callback(message.Content)
+		}
+	}
 }

@@ -1,29 +1,30 @@
 package config
 
 import (
+	"nations/redis"
+
 	"encoding/json"
 	"os"
 )
 
 type Config struct {
 	Channel string `json:"channel"`
+	Guild string `json:"guild"`
 }
 
-func Get(key string) string {
+func Get(key string) redis.Json {
 	config := GetAll()
-	switch key {
-	case "channel":
-		return config.Channel
-	}
-	return ""
+	return config[key].(redis.Json)
+}
+
+func GetStr(key string) string {
+	config := GetAll()
+	return config[key].(string)
 }
 
 func Save(key string, value string) {
 	config := GetAll()
-	switch key {
-	case "channel":
-		config.Channel = value
-	}
+	config[key] = value
 	dat, err := json.Marshal(config)
 	if err != nil {
 		panic("error saving config file (json)")
@@ -34,12 +35,12 @@ func Save(key string, value string) {
 	}
 }
 
-func GetAll() Config {
+func GetAll() redis.Json {
 	dat, err := os.ReadFile("config.json")
 	if err != nil {
 		panic("error reading config file")
 	}
-	var config Config
+	var config redis.Json
 	err = json.Unmarshal(dat, &config)
 	if err != nil {
 		panic("error reading config file")
