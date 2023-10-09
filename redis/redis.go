@@ -2,38 +2,43 @@ package redis
 
 import (
 	"context"
-	"time"
+	"encoding/json"
+	"fmt"
 	"nations/utils"
-	 "encoding/json"
-	 "os"
+	"os"
+	"time"
 
 	"github.com/redis/go-redis/v9"
 )
 
 var ctx = context.Background()
+
 type RedisClient struct {
-	client *redis.Client
+	client   *redis.Client
 	channels map[string]RedisChannel
 }
+
 var redisClient *RedisClient = nil
+
 func NewRedisClient() (*RedisClient, error) {
-	
-	if(redisClient != nil){
+
+	if redisClient != nil {
 		return redisClient, nil
 	}
 	var client *redis.Client = nil
 	err := utils.Retry(func() error {
 		client = redis.NewClient(&redis.Options{
 			Addr:     os.Getenv("REDIS_URL"),
-			Username:    os.Getenv("REDIS_USER"), 
-			Password: os.Getenv("REDIS_PASSWORD"), 
+			Username: os.Getenv("REDIS_USER"),
+			Password: os.Getenv("REDIS_PASSWORD"),
 		})
 		return nil
-	}, 12, 10 * time.Second)
-	if err != nil { 
+	}, 12, 10*time.Second)
+	if err != nil {
 		return nil, err
-	} 
+	}
 	redisClient = &RedisClient{client, make(map[string]RedisChannel)}
+	fmt.Println("Connected to Redis")
 	return redisClient, nil
 }
 
@@ -43,23 +48,24 @@ func (r RedisClient) GetChannels() map[string]RedisChannel {
 
 func (r RedisClient) Subscribe(channel string) RedisChannel {
 	_, channel_exists := r.channels[channel]
-	if(channel_exists){
+	if channel_exists {
 		return r.channels[channel]
 	}
 	pubsub := r.client.Subscribe(ctx, channel)
+	fmt.Println("Subscribed to " + channel)
 	r.channels[channel] = RedisChannel{pubsub, make(map[string][]func(Json))}
 	return r.channels[channel]
 }
 
 type RedisChannel struct {
-	pubsub *redis.PubSub
+	pubsub          *redis.PubSub
 	event_listeners map[string][]func(Json)
 }
 
 type Message struct {
-	Type    string  `json:"type"`
-	Ip      string  `json:"ip"`
-	Content Json `json:"content"`
+	Type    string `json:"type"`
+	Ip      string `json:"ip"`
+	Content Json   `json:"content"`
 }
 
 type Json = map[string]interface{}

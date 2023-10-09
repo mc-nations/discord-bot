@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"nations/config"
 	"nations/utils"
-	"time"
 	"os"
+	"time"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -37,15 +37,14 @@ type DiscordBot struct {
 	Client *discordgo.Session
 }
 
+var discordClient *DiscordBot = nil
 
-var discordClient *DiscordBot = nil;
 func NewDiscordClient() (*DiscordBot, error) {
 
-
-	if(discordClient != nil){
+	if discordClient != nil {
 		return discordClient, nil
 	}
- 	var s *discordgo.Session = nil
+	var s *discordgo.Session = nil
 	err := utils.Retry(func() error {
 		var err error
 		s, err = discordgo.New("Bot " + os.Getenv("DISCORD_TOKEN"))
@@ -54,7 +53,7 @@ func NewDiscordClient() (*DiscordBot, error) {
 		}
 		err = s.Open()
 		if err != nil {
-			panic("error opening connection") 
+			panic("error opening connection")
 		}
 		s.AddHandler(func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			fmt.Println(i.ApplicationCommandData().Name)
@@ -72,11 +71,12 @@ func NewDiscordClient() (*DiscordBot, error) {
 			registeredCommands[i] = cmd
 		}
 		return nil
-	}, 6, 20 * time.Second)
+	}, 6, 20*time.Second)
 
-	if err != nil { 
+	if err != nil {
 		return nil, err
-	} 
+	}
+	fmt.Println("Discord bot is now running.")
 	discordClient = &DiscordBot{Client: s}
 	return discordClient, nil
 
