@@ -52,13 +52,13 @@ func ListenToShrineEvents() {
 			fmt.Println("Error creating DM channel:", err)
 			return
 		}
-
+		reviveTime := data["revive_time"].(string)
 		embed := &discordgo.MessageEmbed{
 			Author: &discordgo.MessageEmbedAuthor{
 				IconURL: "https://crafatar.com/avatars/" + strings.Replace(actionUser["minecraft_user"].(redis.Json)["id"].(string), "-", "", -1) + ".png?size=128",
 				Name:    "Your token has been picked up!",
 			},
-			Description: fmt.Sprintf("Your token has been picked up by <@%s>. Once they bring it to the shrine you will be revived after xx hours.", actionUserID),
+			Description: fmt.Sprintf("Your token has been picked up by <@%s>. Once they bring it to the shrine you will be revived after %s hours.", actionUserID, reviveTime),
 			Color:       0x6c0094, // Purple color
 		}
 
@@ -77,11 +77,33 @@ func ListenToShrineEvents() {
 			fmt.Println("Error creating DM channel:", err)
 			return
 		}
+		reviveTime := data["revive_time"].(string)
 
 		embed := &discordgo.MessageEmbed{
 			Title:       "Your token has been brought to the shrine!",
-			Description: "You will be able to join the server again after 24 hours.",
+			Description: fmt.Sprintf("You will be able to join the server again after %s hours", reviveTime),
 			Color:       0x6c0094, // Purple color
+		}
+		_, err = bot.Client.ChannelMessageSendEmbed(channel.ID, embed)
+		if err != nil {
+			fmt.Println("Error sending message:", err)
+			return
+		}
+	})
+
+	mc_server.RegisterListener("shrine_revived_player", func(data redis.Json) {
+		userID := data["discord_user"].(redis.Json)["id"].(string)
+
+		channel, err := bot.Client.UserChannelCreate(userID)
+		if err != nil {
+			fmt.Println("Error creating DM channel:", err)
+			return
+		}
+
+		embed := &discordgo.MessageEmbed{
+			Title:       "You have been revived!",
+			Description: "You have been revived by the shrine! You can now join the server again.",
+			Color:       0x6c0094, // purple color
 		}
 
 		_, err = bot.Client.ChannelMessageSendEmbed(channel.ID, embed)
@@ -90,4 +112,5 @@ func ListenToShrineEvents() {
 			return
 		}
 	})
+
 }

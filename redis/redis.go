@@ -83,7 +83,7 @@ func (c RedisChannel) StartListing() {
 		var message Message
 		json.Unmarshal([]byte(msg.Payload), &message)
 		for _, callback := range c.event_listeners[message.Content["name"].(string)] {
-			callback(message.Content)
+			go callback(message.Content)
 		}
 	}
 }

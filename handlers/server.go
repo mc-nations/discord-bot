@@ -15,6 +15,7 @@ func ListenToServerEvents() {
 	redisClient, _ := redis.NewRedisClient()
 	mc_server := redisClient.Subscribe("mc_server")
 	bot, _ := discord.NewDiscordClient()
+
 	mc_server.RegisterListener("server_start", func(data redis.Json) {
 		id := config.GetStr("channel")
 
@@ -22,6 +23,34 @@ func ListenToServerEvents() {
 		embed := &discordgo.MessageEmbed{
 			Title:       "Server Started",
 			Description: "The server has just started and you can join now!",
+			Color:       0x00ff00, // Green color
+		}
+
+		// Send the embed message to the specified channel
+		bot.Client.ChannelMessageSendEmbed(id, embed)
+	})
+
+	mc_server.RegisterListener("server_lock", func(data redis.Json) {
+		id := config.GetStr("channel")
+
+		// Create the embed message
+		embed := &discordgo.MessageEmbed{
+			Title:       "Server Closed",
+			Description: "The server is now closed, it will be open at 'insert time here <@188659395540811776>'",
+			Color:       0xff0000, // Red color
+		}
+
+		// Send the embed message to the specified channel
+		bot.Client.ChannelMessageSendEmbed(id, embed)
+	})
+
+	mc_server.RegisterListener("server_unlock", func(data redis.Json) {
+		id := config.GetStr("channel")
+
+		// Create the embed message
+		embed := &discordgo.MessageEmbed{
+			Title:       "Server Opened",
+			Description: "The server is now open and you can join now.",
 			Color:       0x00ff00, // Green color
 		}
 
