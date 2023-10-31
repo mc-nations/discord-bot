@@ -2,8 +2,10 @@ package handlers
 
 import (
 	"fmt"
+	"math"
 	"nations/discord"
 	"nations/redis"
+	"strconv"
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
@@ -29,9 +31,9 @@ func ListenToShrineEvents() {
 		}
 
 		embed := &discordgo.MessageEmbed{
-			Title:       "You died!",
-			Description: "A player has to pick up your totem in order to revive you!",
-			Color:       0x00ff00, // Green color
+			Title:       "Du bist gestorben!",
+			Description: "Ein anderer Spieler muss nun dein Totem aufheben, damit du schneller und ohne Strafe wiederbelebt wirst.",
+			Color:       0x6c0094, // Purple color
 		}
 
 		_, err = bot.Client.ChannelMessageSendEmbed(channel.ID, embed)
@@ -52,13 +54,14 @@ func ListenToShrineEvents() {
 			fmt.Println("Error creating DM channel:", err)
 			return
 		}
-		reviveTime := data["revive_time"].(string)
+		reviveTime := data["revive_time"].(float64)
+
 		embed := &discordgo.MessageEmbed{
 			Author: &discordgo.MessageEmbedAuthor{
 				IconURL: "https://crafatar.com/avatars/" + strings.Replace(actionUser["minecraft_user"].(redis.Json)["id"].(string), "-", "", -1) + ".png?size=128",
-				Name:    "Your token has been picked up!",
+				Name:    "Dein Totem wurde aufgehoben!",
 			},
-			Description: fmt.Sprintf("Your token has been picked up by <@%s>. Once they bring it to the shrine you will be revived after %s hours.", actionUserID, reviveTime),
+			Description: fmt.Sprintf("Dein Token wurde von <@%s> aufgehoben, sobald es zum Shrine gebracht wurde wirst du nach %s wiederbelebt.", actionUserID, getReviveTimeString(reviveTime)),
 			Color:       0x6c0094, // Purple color
 		}
 
@@ -77,11 +80,11 @@ func ListenToShrineEvents() {
 			fmt.Println("Error creating DM channel:", err)
 			return
 		}
-		reviveTime := data["revive_time"].(string)
+		reviveTime := data["revive_time"].(float64)
 
 		embed := &discordgo.MessageEmbed{
-			Title:       "Your token has been brought to the shrine!",
-			Description: fmt.Sprintf("You will be able to join the server again after %s hours", reviveTime),
+			Title:       "Dein Token wurde zum Shrine gebracht!",
+			Description: fmt.Sprintf("Du kannst nach %s wieder joinen.", getReviveTimeString(reviveTime)),
 			Color:       0x6c0094, // Purple color
 		}
 		_, err = bot.Client.ChannelMessageSendEmbed(channel.ID, embed)
@@ -101,8 +104,8 @@ func ListenToShrineEvents() {
 		}
 
 		embed := &discordgo.MessageEmbed{
-			Title:       "You have been revived!",
-			Description: "You have been revived by the shrine! You can now join the server again.",
+			Title:       "Du wurdest vom Shrine wiederbelebt!",
+			Description: "Du kannst nun wieder joinen.",
 			Color:       0x6c0094, // purple color
 		}
 
@@ -113,4 +116,14 @@ func ListenToShrineEvents() {
 		}
 	})
 
+}
+
+func getReviveTimeString(millis float64) string {
+	hours := millis / 1000 / 60 / 60
+	rest_minutes := hours*60 - math.Floor(hours)*60
+	if hours >= 1 {
+		return strconv.FormatFloat(hours, 'f', 0, 64) + " Stunden und " + strconv.FormatFloat(rest_minutes, 'f', 0, 64) + " Minuten"
+	} else {
+		return strconv.FormatFloat(rest_minutes, 'f', 0, 64) + " Minuten"
+	}
 }

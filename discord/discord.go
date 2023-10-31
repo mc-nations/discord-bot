@@ -22,11 +22,24 @@ var (
 	commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
 		"here": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			id := i.Interaction.ChannelID
+			var channel, err = s.Channel(id)
+			fmt.Println(channel.Type)
+			fmt.Println(discordgo.ChannelTypeGuildText)
+			if err != nil || channel.Type != discordgo.ChannelTypeGuildText {
+				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+					Type: discordgo.InteractionResponseChannelMessageWithSource,
+					Data: &discordgo.InteractionResponseData{
+						Content: "Du kannst diesen Command nur auf einem Server ausführen!",
+					},
+				})
+				return
+
+			}
 			config.Save("channel", id)
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
 				Data: &discordgo.InteractionResponseData{
-					Content: "Now sending all messages to this channel",
+					Content: "Alle nachrichten werden nun in diesem Channel gesendet!",
 				},
 			})
 		},

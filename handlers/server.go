@@ -16,7 +16,7 @@ func ListenToServerEvents() {
 	mc_server := redisClient.Subscribe("mc_server")
 	bot, _ := discord.NewDiscordClient()
 
-	mc_server.RegisterListener("server_start", func(data redis.Json) {
+	/* mc_server.RegisterListener("server_start", func(data redis.Json) {
 		id := config.GetStr("channel")
 
 		// Create the embed message
@@ -28,15 +28,15 @@ func ListenToServerEvents() {
 
 		// Send the embed message to the specified channel
 		bot.Client.ChannelMessageSendEmbed(id, embed)
-	})
+	}) */
 
 	mc_server.RegisterListener("server_lock", func(data redis.Json) {
 		id := config.GetStr("channel")
 
 		// Create the embed message
 		embed := &discordgo.MessageEmbed{
-			Title:       "Server Closed",
-			Description: "The server is now closed, it will be open at 'insert time here <@188659395540811776>'",
+			Title:       "Server geschlossen",
+			Description: "Der Server ist nun geschlossen!",
 			Color:       0xff0000, // Red color
 		}
 
@@ -49,8 +49,8 @@ func ListenToServerEvents() {
 
 		// Create the embed message
 		embed := &discordgo.MessageEmbed{
-			Title:       "Server Opened",
-			Description: "The server is now open and you can join now.",
+			Title:       "Server geöffnet",
+			Description: "Der Server ist nun geöffnet, du kannst nun joinen!",
 			Color:       0x00ff00, // Green color
 		}
 
@@ -96,15 +96,17 @@ func ListenToPlayerEvents() {
 		minecraft_id := data["minecraft_user"].(redis.Json)["id"].(string)
 		minecraft_name := data["minecraft_user"].(redis.Json)["name"].(string)
 		description := minecraft_name + " left the server!"
-		discordUser := data["discord_user"].(redis.Json)
-		fmt.Println(discordUser)
-		if discordUser != nil && discordUser["id"] != nil {
-			member_id := discordUser["id"].(string)
-			user, err := bot.Client.User(member_id)
-			if err != nil {
-				fmt.Println(err)
+		if data["discord_user"] != nil {
+			discordUser := data["discord_user"].(redis.Json)
+			fmt.Println(discordUser)
+			if discordUser != nil && discordUser["id"] != nil {
+				member_id := discordUser["id"].(string)
+				user, err := bot.Client.User(member_id)
+				if err != nil {
+					fmt.Println(err)
+				}
+				description = user.Mention() + " left the server!"
 			}
-			description = user.Mention() + " left the server!"
 		}
 
 		// Create the embed message

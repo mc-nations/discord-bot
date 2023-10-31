@@ -17,6 +17,7 @@ func main() {
 		panic("failed to login to redis")
 	}
 
+	handlers.ListenToServerEvents()
 	handlers.ListenToPlayerEvents()
 	handlers.ListenToAccountLinkEvents()
 	handlers.ListenToShrineEvents()
