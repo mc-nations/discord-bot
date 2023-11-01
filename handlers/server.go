@@ -75,7 +75,7 @@ func ListenToPlayerEvents() {
 		}
 		// Create the embed message
 		embed := &discordgo.MessageEmbed{
-			Description: user.Mention() + " joined the server!",
+			Description: user.Mention() + " hat den Server betreten!",
 			Color:       0x00ff00, // Green color
 			Author: &discordgo.MessageEmbedAuthor{
 				IconURL: "https://crafatar.com/avatars/" + strings.Replace(minecraft_id, "-", "", -1) + ".png?size=128",
@@ -95,7 +95,7 @@ func ListenToPlayerEvents() {
 		channel_id := config.GetStr("channel")
 		minecraft_id := data["minecraft_user"].(redis.Json)["id"].(string)
 		minecraft_name := data["minecraft_user"].(redis.Json)["name"].(string)
-		description := minecraft_name + " left the server!"
+		description := minecraft_name + " hat den Server verlassen!"
 		if data["discord_user"] != nil {
 			discordUser := data["discord_user"].(redis.Json)
 			fmt.Println(discordUser)
@@ -105,7 +105,7 @@ func ListenToPlayerEvents() {
 				if err != nil {
 					fmt.Println(err)
 				}
-				description = user.Mention() + " left the server!"
+				description = user.Mention() + " hat den Server verlassen!"
 			}
 		}
 

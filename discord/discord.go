@@ -1,6 +1,7 @@
 package discord
 
 import (
+	"encoding/csv"
 	"fmt"
 	"nations/config"
 	"nations/utils"
@@ -92,5 +93,33 @@ func NewDiscordClient() (*DiscordBot, error) {
 	fmt.Println("Discord bot is now running.")
 	discordClient = &DiscordBot{Client: s}
 	return discordClient, nil
+
+}
+
+func DistributeRoles(filePath string) {
+	roleIDs := map[string]string{
+		"schnee":    "1135226465709981737",
+		"wueste":    "1135229220293972048",
+		"dschungel": "1135227913453707325",
+	}
+
+	bot, _ := NewDiscordClient()
+	file, err := os.Open(filePath)
+	if err == nil {
+		reader := csv.NewReader(file)
+		entries, err := reader.ReadAll()
+		//fmt.Println(entries)
+		if err == nil {
+			for _, entry := range entries {
+				bot.Client.GuildMemberRoleAdd(config.GetStr("guild"), entry[0], roleIDs[entry[1]])
+				fmt.Println("Added role " + entry[1] + " to " + entry[0])
+			}
+		} else {
+			fmt.Println("error reading csv file")
+		}
+	} else {
+		fmt.Println("Error opening file")
+		fmt.Println(err)
+	}
 
 }

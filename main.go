@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	"nations/discord"
 	"nations/handlers"
 	"nations/redis"
 	"os"
@@ -12,6 +12,14 @@ import (
 )
 
 func main() {
+
+	if len(os.Args) > 1 {
+		if os.Args[1] == "distribute-roles" {
+			discord.DistributeRoles(os.Args[2])
+			return
+		}
+	}
+
 	client, err := redis.NewRedisClient()
 	if err != nil {
 		panic("failed to login to redis")
@@ -24,11 +32,8 @@ func main() {
 
 	mc_server := client.Subscribe("mc_server")
 
-	mc_server.RegisterListener("server_remaining_uptime", func(data redis.Json) {
-		fmt.Println(data["remaining_time"])
-	})
-
 	mc_server.StartListing()
+	//discord.DistributeRoles()
 
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
