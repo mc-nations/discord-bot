@@ -63,11 +63,11 @@ func NewDiscordClient() (*DiscordBot, error) {
 		var err error
 		s, err = discordgo.New("Bot " + os.Getenv("DISCORD_TOKEN"))
 		if err != nil {
-			panic("error login to discord")
+			panic("error loging to discord")
 		}
 		err = s.Open()
 		if err != nil {
-			panic("error opening connection")
+			panic("error opening connection to discord")
 		}
 		s.AddHandler(func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			fmt.Println(i.ApplicationCommandData().Name)
@@ -115,10 +115,10 @@ func DistributeRoles(filePath string) {
 				fmt.Println("Added role " + entry[1] + " to " + entry[0])
 			}
 		} else {
-			fmt.Println("error reading csv file")
+			fmt.Println("error reading csv file for role distribution")
 		}
 	} else {
-		fmt.Println("Error opening file")
+		fmt.Println("Error opening file trying to distribute roles")
 		fmt.Println(err)
 	}
 

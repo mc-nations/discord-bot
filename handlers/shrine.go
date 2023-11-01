@@ -1,10 +1,12 @@
 package handlers
 
 import (
+	"encoding/json"
 	"fmt"
 	"math"
 	"nations/discord"
 	"nations/redis"
+	"os"
 	"strconv"
 	"strings"
 
@@ -48,6 +50,11 @@ func ListenToShrineEvents() {
 		tokenUser := data["token_user"].(redis.Json)
 		actionUserID := actionUser["discord_user"].(redis.Json)["id"].(string)
 		tokenUserID := tokenUser["discord_user"].(redis.Json)["id"].(string)
+		if checkPlayerPickUpCombi(actionUserID, tokenUserID) {
+			return
+		} else {
+			setTokenHolder(actionUserID, tokenUserID)
+		}
 
 		channel, err := bot.Client.UserChannelCreate(tokenUserID)
 		if err != nil {
@@ -96,15 +103,16 @@ func ListenToShrineEvents() {
 
 	mc_server.RegisterListener("shrine_revived_player", func(data redis.Json) {
 		userID := data["discord_user"].(redis.Json)["id"].(string)
-
+		reviveType := data["revive_type"].(string)
 		channel, err := bot.Client.UserChannelCreate(userID)
+		removeTokenHolder(userID)
 		if err != nil {
 			fmt.Println("Error creating DM channel:", err)
 			return
 		}
 
 		embed := &discordgo.MessageEmbed{
-			Title:       "Du wurdest vom Shrine wiederbelebt!",
+			Title:       fmt.Sprintf("Du wurdest %s wiederbelebt!", getRevivedByString(reviveType)),
 			Description: "Du kannst nun wieder joinen.",
 			Color:       0x6c0094, // purple color
 		}
@@ -117,6 +125,15 @@ func ListenToShrineEvents() {
 	})
 
 }
+func getRevivedByString(reviveType string) string {
+	if reviveType == "shrine" {
+		return "vom Shrine"
+	} else if reviveType == "timer" {
+		return "nach Ablauf der Strafzeit"
+	} else {
+		return "von einem Administrator"
+	}
+}
 
 func getReviveTimeString(millis float64) string {
 	hours := millis / 1000 / 60 / 60
@@ -126,4 +143,58 @@ func getReviveTimeString(millis float64) string {
 	} else {
 		return strconv.FormatFloat(rest_minutes, 'f', 0, 64) + " Minuten"
 	}
+}
+
+func readPlayerCombinations() redis.Json {
+	if _, err := os.Stat("playerTokenCombinations.json"); err != nil {
+		os.WriteFile("playerTokenCombinations.json", []byte("{}"), 0644)
+	}
+	dat, err := os.ReadFile("playerTokenCombinations.json")
+	if err != nil {
+		panic("error reading playerTokenCombinations file")
+	}
+	var combinations redis.Json
+	err = json.Unmarshal(dat, &combinations)
+	if err != nil {
+		panic("error unmarshaling")
+	}
+
+	return combinations
+}
+
+func checkPlayerPickUpCombi(actionUserID string, tokenUserID string) bool {
+	var combinations = readPlayerCombinations()
+	holder := combinations[tokenUserID]
+	if holder == nil {
+		return false
+	}
+	return holder == actionUserID
+}
+
+// addPlayerPickUpCombi adds a combination of a player picking up another player's token to the json file of combinations
+// prevent that player receives multiple messages when multiple players pick up their token
+func setTokenHolder(actionUserID string, tokenUserID string) {
+	var combinations redis.Json
+	combinations = readPlayerCombinations()
+	combinations[tokenUserID] = actionUserID
+	saveFile(combinations)
+}
+
+func removeTokenHolder(tokenUserId string) {
+	combinations := readPlayerCombinations()
+	delete(combinations, tokenUserId)
+	saveFile(combinations)
+}
+
+// saveFile saves the json file of playerTokenCombinations
+func saveFile(combinations redis.Json) {
+	dat, err := json.Marshal(combinations)
+	if err != nil {
+		panic("error marshaling token")
+	}
+	err = os.WriteFile("playerTokenCombinations.json", dat, 0644)
+	if err != nil {
+		panic("error writing token")
+	}
+
 }

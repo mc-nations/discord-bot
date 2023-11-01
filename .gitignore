@@ -24,3 +24,5 @@ tmp
 nations
 config.json
 .env
+
+playerTokenCombinations.json

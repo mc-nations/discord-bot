@@ -71,6 +71,7 @@ func ListenToPlayerEvents() {
 		minecraft_name := data["minecraft_user"].(redis.Json)["name"].(string)
 		user, err := bot.Client.User(member_id)
 		if err != nil {
+			fmt.Println("error getting user (join event)")
 			fmt.Println(err)
 		}
 		// Create the embed message
@@ -86,6 +87,7 @@ func ListenToPlayerEvents() {
 		// Send the embed message to the specified channel
 		_, err = bot.Client.ChannelMessageSendEmbed(channel_id, embed)
 		if err != nil {
+			fmt.Println("error sending join message")
 			fmt.Println(err)
 		}
 
@@ -98,11 +100,11 @@ func ListenToPlayerEvents() {
 		description := minecraft_name + " hat den Server verlassen!"
 		if data["discord_user"] != nil {
 			discordUser := data["discord_user"].(redis.Json)
-			fmt.Println(discordUser)
 			if discordUser != nil && discordUser["id"] != nil {
 				member_id := discordUser["id"].(string)
 				user, err := bot.Client.User(member_id)
 				if err != nil {
+					fmt.Println("error getting discord user")
 					fmt.Println(err)
 				}
 				description = user.Mention() + " hat den Server verlassen!"
@@ -122,6 +124,7 @@ func ListenToPlayerEvents() {
 		// Send the embed message to the specified channel
 		_, err := bot.Client.ChannelMessageSendEmbed(channel_id, embed)
 		if err != nil {
+			fmt.Println("error sending quit message")
 			fmt.Println(err)
 		}
 

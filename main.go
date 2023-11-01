@@ -8,6 +8,8 @@ import (
 	"os/signal"
 	"syscall"
 
+	"fmt"
+
 	_ "github.com/joho/godotenv/autoload"
 )
 
@@ -15,6 +17,11 @@ func main() {
 
 	if len(os.Args) > 1 {
 		if os.Args[1] == "distribute-roles" {
+			fmt.Println(len(os.Args))
+			if len(os.Args) <= 2 {
+				fmt.Println("Please provide a csv file with format: userId,biome")
+				return
+			}
 			discord.DistributeRoles(os.Args[2])
 			return
 		}

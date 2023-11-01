@@ -20,6 +20,7 @@ func ListenToAccountLinkEvents() {
 		role_id := config.GetStr("linkedRole")
 		err := bot.Client.GuildMemberRoleAdd(guild_id, member_id, role_id)
 		if err != nil {
+			fmt.Println("error adding role")
 			fmt.Println(err)
 		}
 	})
@@ -31,6 +32,7 @@ func ListenToAccountLinkEvents() {
 		role_id := config.GetStr("linkedRole")
 		err := bot.Client.GuildMemberRoleRemove(guild_id, member_id, role_id)
 		if err != nil {
+			fmt.Println("error removing role")
 			fmt.Println(err)
 		}
 	})
