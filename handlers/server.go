@@ -114,7 +114,7 @@ func ListenToPlayerEvents() {
 		// Create the embed message
 		embed := &discordgo.MessageEmbed{
 			Description: description,
-			Color:       0xff0000, // Green color
+			Color:       0xf5d142, // yellow color
 			Author: &discordgo.MessageEmbedAuthor{
 				IconURL: "https://crafatar.com/avatars/" + strings.Replace(minecraft_id, "-", "", -1) + ".png?size=128",
 				Name:    minecraft_name,

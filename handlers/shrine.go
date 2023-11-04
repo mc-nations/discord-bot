@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
+	"nations/config"
 	"nations/discord"
 	"nations/redis"
 	"os"
@@ -43,6 +44,39 @@ func ListenToShrineEvents() {
 			fmt.Println("Error sending message:", err)
 			return
 		}
+
+		minecraft_id := data["minecraft_user"].(redis.Json)["id"].(string)
+		minecraft_name := data["minecraft_user"].(redis.Json)["name"].(string)
+		description := minecraft_name + " ist gestorben!"
+		if data["discord_user"] != nil {
+			discordUser := data["discord_user"].(redis.Json)
+			if discordUser != nil && discordUser["id"] != nil {
+				member_id := discordUser["id"].(string)
+				user, err := bot.Client.User(member_id)
+				if err != nil {
+					fmt.Println("error getting discord user")
+					fmt.Println(err)
+				}
+				description = user.Mention() + " ist gestorben!"
+			}
+		}
+
+		global_embed := &discordgo.MessageEmbed{
+			Description: description,
+			Color:       0xff0000, // red color
+			Author: &discordgo.MessageEmbedAuthor{
+				IconURL: "https://crafatar.com/avatars/" + strings.Replace(minecraft_id, "-", "", -1) + ".png?size=128",
+				Name:    minecraft_name,
+			},
+		}
+
+		global_channel_id := config.GetStr("channel")
+		_, err = bot.Client.ChannelMessageSendEmbed(global_channel_id, global_embed)
+		if err != nil {
+			fmt.Println("error sending quit message")
+			fmt.Println(err)
+		}
+
 	})
 
 	mc_server.RegisterListener("shrine_player_token_picked_up", func(data redis.Json) {
@@ -112,7 +146,7 @@ func ListenToShrineEvents() {
 		}
 
 		embed := &discordgo.MessageEmbed{
-			Title:       fmt.Sprintf("Du wurdest %s wiederbelebt!", getRevivedByString(reviveType)),
+			Title:       fmt.Sprintf("Du wurdest%swiederbelebt!", getRevivedByString(reviveType)),
 			Description: "Du kannst nun wieder joinen.",
 			Color:       0x6c0094, // purple color
 		}
@@ -122,16 +156,53 @@ func ListenToShrineEvents() {
 			fmt.Println("Error sending message:", err)
 			return
 		}
+
+		minecraft_id := data["minecraft_user"].(redis.Json)["id"].(string)
+		minecraft_name := data["minecraft_user"].(redis.Json)["name"].(string)
+		description := minecraft_name + " wurde wiederbelebt!"
+		if data["discord_user"] != nil {
+			discordUser := data["discord_user"].(redis.Json)
+			if discordUser != nil && discordUser["id"] != nil {
+				member_id := discordUser["id"].(string)
+				user, err := bot.Client.User(member_id)
+				if err != nil {
+					fmt.Println("error getting discord user")
+					fmt.Println(err)
+				}
+				description = user.Mention() + " wurde wiederbelebt!"
+			}
+		}
+
+		// Create the embed message
+		global_embed := &discordgo.MessageEmbed{
+			Description: description,
+			Color:       0x6c0094, // purple color
+			Author: &discordgo.MessageEmbedAuthor{
+				IconURL: "https://crafatar.com/avatars/" + strings.Replace(minecraft_id, "-", "", -1) + ".png?size=128",
+				Name:    minecraft_name,
+			},
+		}
+
+		global_channel_id := config.GetStr("channel")
+		_, err = bot.Client.ChannelMessageSendEmbed(global_channel_id, global_embed)
+		if err != nil {
+			fmt.Println("error sending quit message")
+			fmt.Println(err)
+		}
+
 	})
 
 }
 func getRevivedByString(reviveType string) string {
+	reviveType = strings.ToLower(reviveType)
 	if reviveType == "shrine" {
-		return "vom Shrine"
+		return " vom Shrine "
 	} else if reviveType == "timer" {
-		return "nach Ablauf der Strafzeit"
+		return " nach Ablauf der Strafzeit "
+	} else if reviveType == "command" {
+		return " von einem Administrator "
 	} else {
-		return "von einem Administrator"
+		return " "
 	}
 }
 
