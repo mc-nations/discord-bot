@@ -35,7 +35,7 @@ func ListenToShrineEvents() {
 
 		embed := &discordgo.MessageEmbed{
 			Title:       "Du bist gestorben!",
-			Description: "Ein anderer Spieler muss nun dein Totem aufheben, damit du schneller und ohne Strafe wiederbelebt wirst.",
+			Description: "Ein anderer Spieler muss nun dein Token aufheben, damit du schneller und ohne Strafe wiederbelebt wirst.",
 			Color:       0x6c0094, // Purple color
 		}
 
@@ -100,7 +100,7 @@ func ListenToShrineEvents() {
 		embed := &discordgo.MessageEmbed{
 			Author: &discordgo.MessageEmbedAuthor{
 				IconURL: "https://crafatar.com/avatars/" + strings.Replace(actionUser["minecraft_user"].(redis.Json)["id"].(string), "-", "", -1) + ".png?size=128",
-				Name:    "Dein Totem wurde aufgehoben!",
+				Name:    "Dein Token wurde aufgehoben!",
 			},
 			Description: fmt.Sprintf("Dein Token wurde von <@%s> aufgehoben, sobald es zum Shrine gebracht wurde wirst du nach %s wiederbelebt.", actionUserID, getReviveTimeString(reviveTime)),
 			Color:       0x6c0094, // Purple color
