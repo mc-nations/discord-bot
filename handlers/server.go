@@ -3,6 +3,7 @@ package handlers
 import (
 	"fmt"
 	"nations/config"
+	"slices"
 	"strings"
 
 	"nations/discord"
@@ -42,6 +43,8 @@ func ListenToServerEvents() {
 
 		// Send the embed message to the specified channel
 		bot.Client.ChannelMessageSendEmbed(id, embed)
+
+		removeOnlineRoles(bot)
 	})
 
 	mc_server.RegisterListener("server_unlock", func(data redis.Json) {
@@ -91,10 +94,18 @@ func ListenToPlayerEvents() {
 			fmt.Println(err)
 		}
 
+		guild_id := config.GetStr("guild")
+		role_id := config.GetStr("onlineRole")
+		roleErr := bot.Client.GuildMemberRoleAdd(guild_id, member_id, role_id)
+		if roleErr != nil {
+			fmt.Println("error adding role")
+			fmt.Println(roleErr)
+		}
 	})
 
 	mc_server.RegisterListener("player_quit", func(data redis.Json) {
 		channel_id := config.GetStr("channel")
+		member_id := data["discord_user"].(redis.Json)["id"].(string)
 		minecraft_id := data["minecraft_user"].(redis.Json)["id"].(string)
 		minecraft_name := data["minecraft_user"].(redis.Json)["name"].(string)
 		description := minecraft_name + " hat den Server verlassen!"
@@ -128,5 +139,33 @@ func ListenToPlayerEvents() {
 			fmt.Println(err)
 		}
 
+		guild_id := config.GetStr("guild")
+		role_id := config.GetStr("onlineRole")
+
+		roleErr := bot.Client.GuildMemberRoleRemove(guild_id, member_id, role_id)
+		if err != nil {
+			fmt.Println("error removing role")
+			fmt.Println(roleErr)
+		}
 	})
+}
+
+func removeOnlineRoles(bot *discord.DiscordBot) {
+	guild_id := config.GetStr("guild")
+	role_id := config.GetStr("onlineRole")
+
+	members, err := bot.Client.GuildMembers(guild_id, "", 1000)
+	if err != nil {
+		fmt.Print("error while getting guild members")
+		fmt.Print(err)
+	}
+	for _, member := range members {
+		if slices.Contains(member.Roles, role_id) {
+			roleErr := bot.Client.GuildMemberRoleRemove(guild_id, member.User.ID, role_id)
+			if err != nil {
+				fmt.Println("error removing role")
+				fmt.Println(roleErr)
+			}
+		}
+	}
 }
